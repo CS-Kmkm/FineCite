@@ -110,7 +110,8 @@ class CustomTrainer:
                 "weight_decay": 0.0,
             },
         ]
-        self.optimizer = bnb.optim.AdamW(
+        AdamW = bnb.optim.AdamW if "llm2vec" in self.args.model_name else torch.optim.AdamW
+        self.optimizer = AdamW(
             optimizer_grouped_parameters, lr=float(self.args.learning_rate), eps=self.args.adam_epsilon
         )
         self.scheduler = get_linear_schedule_with_warmup(
@@ -125,7 +126,7 @@ class CustomTrainer:
                     "weight_decay": self.args.weight_decay,
                 },
             ]
-            self.crf_optimizer = bnb.optim.AdamW(
+            self.crf_optimizer = AdamW(
                 crf_optimizer_grouped_parameters, lr=float(self.args.crf_learning_rate), eps=self.args.adam_epsilon
             )
             self.crf_scheduler = get_linear_schedule_with_warmup(

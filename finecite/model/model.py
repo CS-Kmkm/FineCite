@@ -19,6 +19,8 @@ class ExtractionModel(torch.nn.Module):
             self.crf = CRF(self.args.num_labels, self.args.device, 1)
         else:
             self.loss_fn = CrossEntropyLoss(weight=torch.FloatTensor(self.args.label_weights).to(self.device))
+
+        self.to(self.device)
         
     def forward(self, **inputs):
         ids = inputs['input_ids'].to(self.device, dtype = torch.long)
@@ -100,6 +102,8 @@ class ClassificationModel(torch.nn.Module):
             self.loss_fn = BCEWithLogitsLoss(pos_weight=torch.BFloat16Tensor(self.args.label_weights).to(self.device))
         else:
             self.loss_fn = CrossEntropyLoss(weight=torch.BFloat16Tensor(self.args.label_weights).to(self.device))
+
+        self.to(self.device)
         
     def forward(self, **inputs):
         ids = inputs['input_ids'].to(self.device, dtype = torch.long)

@@ -97,7 +97,7 @@ class CustomTrainer:
                 "params": [
                     p
                     for n, p in self.model.named_parameters()
-                    if not any(nd in n for nd in no_decay) and crf_param not in n
+                    if p.requires_grad and not any(nd in n for nd in no_decay) and crf_param not in n
                 ],
                 "weight_decay": self.args.weight_decay,
             },
@@ -105,7 +105,7 @@ class CustomTrainer:
                 "params": [
                     p
                     for n, p in self.model.named_parameters()
-                    if any(nd in n for nd in no_decay) and crf_param not in n
+                    if p.requires_grad and any(nd in n for nd in no_decay) and crf_param not in n
                 ],
                 "weight_decay": 0.0,
             },

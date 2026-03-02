@@ -26,9 +26,10 @@ pip install torch argparse python-dotenv transformers numpy pandas torchmetrics 
 
 ## 2. 環境変数の設定
 
-ルートディレクトリに `.env` ファイルを作成し、以下を記述してください（パスは環境に合わせて変更）。
+`FineCite/` プロジェクトディレクトリ直下に `.env` ファイルを作成し、以下を記述してください（パスは環境に合わせて変更）。
 
 ```
+# FineCite/.env
 FINECITE_PATH=/path/to/FineCite
 DATA_DIR=/path/to/FineCite/data
 CACHE_DIR=/path/to/FineCite/.cache

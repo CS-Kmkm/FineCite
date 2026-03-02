@@ -63,12 +63,12 @@ OUT_DIR=/path/to/FineCite/output
 
 ## 3. 抽出モデルの学習
 
-引用文脈のスパン抽出（系列ラベリング）を行うモデルを学習します。  
-スクリプトは `finecite/` ディレクトリ内で実行してください。
+引用が含まれる論文テキストから、**どの部分が引用文脈（citation context）に該当するか**をトークンレベルで識別するモデルを学習します。Named Entity Recognition に近い**系列ラベリング**タスクです。学習データには `data/finecite/train.jsonl`（FineCite 独自データセット）が使用されます。
+
+**Step 4 で必要となるため、`--save_model` を必ず指定してください。**
 
 ```bash
-cd finecite
-uv run python train_extraction.py --model_name scibert --ext_type bilstm_crf --save_model
+uv run python finecite/train_extraction.py --model_name scibert --ext_type bilstm_crf --save_model
 ```
 
 ### 主なオプション
@@ -91,25 +91,25 @@ uv run python train_extraction.py --model_name scibert --ext_type bilstm_crf --s
 
 ```bash
 # SciBERT + BiLSTM-CRF（デフォルト設定）
-uv run python train_extraction.py --model_name scibert --ext_type bilstm_crf --save_model
+uv run python finecite/train_extraction.py --model_name scibert --ext_type bilstm_crf --save_model
 
 # LLM2Vec-Mistral + CRF
-uv run python train_extraction.py --model_name llm2vec_mistral --ext_type crf --save_model
+uv run python finecite/train_extraction.py --model_name llm2vec_mistral --ext_type crf --save_model
 
 # デバッグモードで動作確認
-uv run python train_extraction.py --model_name scibert --ext_type linear --debug --debug_size 50
+uv run python finecite/train_extraction.py --model_name scibert --ext_type linear --debug --debug_size 50
 ```
 
 ---
 
 ## 4. 分類モデルの学習
 
-事前学習済み抽出モデルを使って、引用意図の分類モデルを学習します。  
-**抽出モデルの学習・保存（`--save_model`）が先に完了している必要があります。**
+Step 3 で学習した抽出モデルを読み込み、その抽出結果をもとに**引用の意図（citation intent）を分類**するモデルを学習します。「どこを引用しているか（抽出）」に続く「**なぜ引用しているか（分類）**」を答える2段階パイプラインの第2ステップです。
+
+**Step 3 の抽出モデルの学習・保存（`--save_model`）が先に完了している必要があります。**
 
 ```bash
-cd finecite
-uv run python train_classification.py --model_name scibert --dataset acl-arc --cls_type weighted --save_model
+uv run python finecite/train_classification.py --model_name scibert --dataset acl-arc --cls_type weighted --save_model
 ```
 
 ### 主なオプション
@@ -135,16 +135,16 @@ uv run python train_classification.py --model_name scibert --dataset acl-arc --c
 
 ```bash
 # SciBERT + acl-arc データセット（重み付き分類）
-uv run python train_classification.py --model_name scibert --dataset acl-arc --cls_type weighted --save_model
+uv run python finecite/train_classification.py --model_name scibert --dataset acl-arc --cls_type weighted --save_model
 
 # SciBERT + scicite データセット
-uv run python train_classification.py --model_name scibert --dataset scicite --cls_type linear --save_model
+uv run python finecite/train_classification.py --model_name scibert --dataset scicite --cls_type linear --save_model
 
 # LLM2Vec-Mistral + multicite データセット
-uv run python train_classification.py --model_name llm2vec_mistral --ext_model llm2vec_mistral --dataset multicite --cls_type weighted --save_model
+uv run python finecite/train_classification.py --model_name llm2vec_mistral --ext_model llm2vec_mistral --dataset multicite --cls_type weighted --save_model
 
 # デバッグモードで動作確認
-uv run python train_classification.py --model_name scibert --dataset acl-arc --debug --debug_size 50
+uv run python finecite/train_classification.py --model_name scibert --dataset acl-arc --debug --debug_size 50
 ```
 
 ---
@@ -152,13 +152,13 @@ uv run python train_classification.py --model_name scibert --dataset acl-arc --d
 ## 5. 学習の実行順序まとめ
 
 ```
-[Step 1] uv venv && uv pip install ...          # 仮想環境の作成とライブラリのインストール
+[Step 1] uv venv && uv pip install ...                    # 仮想環境の作成とライブラリのインストール
     ↓
-[Step 2] .env ファイルを作成                     # 環境変数の設定
+[Step 2] .env ファイルを作成                              # 環境変数の設定
     ↓
-[Step 3] uv run python train_extraction.py      # 抽出モデルの学習（--save_model を必ず指定）
+[Step 3] uv run python finecite/train_extraction.py       # 「どこを引用しているか」の抽出モデルを学習（--save_model 必須）
     ↓
-[Step 4] uv run python train_classification.py  # 分類モデルの学習（Step 3 の出力モデルを使用）
+[Step 4] uv run python finecite/train_classification.py   # 「なぜ引用しているか」の分類モデルを学習（Step 3 の出力モデルを使用）
 ```
 
 > **注意：** GPU（CUDA）が利用可能な環境での実行を推奨します。  

@@ -172,8 +172,18 @@ def main():
         f"Num pred targets (cls: {tokenizer.cls_token}, sep: {tokenizer.sep_token}, pad: {tokenizer.pad_token}): {num_pred_targets}"
     )
     # print special token in example
+    # v5: extra_special_tokens_ids, v4: additional_special_tokens_ids
+    if hasattr(tokenizer, "extra_special_tokens_ids"):
+        _special_token_ids = tokenizer.extra_special_tokens_ids
+    elif hasattr(tokenizer, "additional_special_tokens_ids"):
+        _special_token_ids = tokenizer.additional_special_tokens_ids
+    else:
+        _special_tokens = getattr(tokenizer, "extra_special_tokens", getattr(tokenizer, "additional_special_tokens", []))
+        _special_token_ids = tokenizer.convert_tokens_to_ids(_special_tokens)
     special_token_ids = [
-        token for token in first_example["input_ids"] if token in tokenizer.additional_special_tokens_ids
+        token
+        for token in first_example["input_ids"]
+        if token in _special_token_ids
     ]
     print(f"Special tokens in input: {tokenizer.convert_ids_to_tokens(ids=special_token_ids)}")
     # print labels in example

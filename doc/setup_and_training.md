@@ -2,10 +2,26 @@
 
 ## 1. 必要なライブラリ
 
-### インストールコマンド
+### uv のインストール
+
+[uv](https://docs.astral.sh/uv/) が未導入の場合は先にインストールしてください。
 
 ```bash
-pip install torch argparse python-dotenv transformers numpy pandas torchmetrics peft bitsandbytes
+# Linux / macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Windows (PowerShell)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+### 仮想環境の作成とライブラリのインストール
+
+```bash
+# プロジェクトディレクトリで仮想環境を作成
+uv venv
+
+# ライブラリをインストール
+uv pip install torch argparse python-dotenv transformers numpy pandas torchmetrics peft bitsandbytes
 ```
 
 ### ライブラリ一覧
@@ -52,7 +68,7 @@ OUT_DIR=/path/to/FineCite/output
 
 ```bash
 cd finecite
-python train_extraction.py --model_name scibert --ext_type bilstm_crf --save_model
+uv run python train_extraction.py --model_name scibert --ext_type bilstm_crf --save_model
 ```
 
 ### 主なオプション
@@ -75,13 +91,13 @@ python train_extraction.py --model_name scibert --ext_type bilstm_crf --save_mod
 
 ```bash
 # SciBERT + BiLSTM-CRF（デフォルト設定）
-python train_extraction.py --model_name scibert --ext_type bilstm_crf --save_model
+uv run python train_extraction.py --model_name scibert --ext_type bilstm_crf --save_model
 
 # LLM2Vec-Mistral + CRF
-python train_extraction.py --model_name llm2vec_mistral --ext_type crf --save_model
+uv run python train_extraction.py --model_name llm2vec_mistral --ext_type crf --save_model
 
 # デバッグモードで動作確認
-python train_extraction.py --model_name scibert --ext_type linear --debug --debug_size 50
+uv run python train_extraction.py --model_name scibert --ext_type linear --debug --debug_size 50
 ```
 
 ---
@@ -93,7 +109,7 @@ python train_extraction.py --model_name scibert --ext_type linear --debug --debu
 
 ```bash
 cd finecite
-python train_classification.py --model_name scibert --dataset acl-arc --cls_type weighted --save_model
+uv run python train_classification.py --model_name scibert --dataset acl-arc --cls_type weighted --save_model
 ```
 
 ### 主なオプション
@@ -119,16 +135,16 @@ python train_classification.py --model_name scibert --dataset acl-arc --cls_type
 
 ```bash
 # SciBERT + acl-arc データセット（重み付き分類）
-python train_classification.py --model_name scibert --dataset acl-arc --cls_type weighted --save_model
+uv run python train_classification.py --model_name scibert --dataset acl-arc --cls_type weighted --save_model
 
 # SciBERT + scicite データセット
-python train_classification.py --model_name scibert --dataset scicite --cls_type linear --save_model
+uv run python train_classification.py --model_name scibert --dataset scicite --cls_type linear --save_model
 
 # LLM2Vec-Mistral + multicite データセット
-python train_classification.py --model_name llm2vec_mistral --ext_model llm2vec_mistral --dataset multicite --cls_type weighted --save_model
+uv run python train_classification.py --model_name llm2vec_mistral --ext_model llm2vec_mistral --dataset multicite --cls_type weighted --save_model
 
 # デバッグモードで動作確認
-python train_classification.py --model_name scibert --dataset acl-arc --debug --debug_size 50
+uv run python train_classification.py --model_name scibert --dataset acl-arc --debug --debug_size 50
 ```
 
 ---
@@ -136,13 +152,13 @@ python train_classification.py --model_name scibert --dataset acl-arc --debug --
 ## 5. 学習の実行順序まとめ
 
 ```
-[Step 1] pip install ...           # ライブラリのインストール
+[Step 1] uv venv && uv pip install ...          # 仮想環境の作成とライブラリのインストール
     ↓
-[Step 2] .env ファイルを作成        # 環境変数の設定
+[Step 2] .env ファイルを作成                     # 環境変数の設定
     ↓
-[Step 3] train_extraction.py       # 抽出モデルの学習（--save_model を必ず指定）
+[Step 3] uv run python train_extraction.py      # 抽出モデルの学習（--save_model を必ず指定）
     ↓
-[Step 4] train_classification.py   # 分類モデルの学習（Step 3 の出力モデルを使用）
+[Step 4] uv run python train_classification.py  # 分類モデルの学習（Step 3 の出力モデルを使用）
 ```
 
 > **注意：** GPU（CUDA）が利用可能な環境での実行を推奨します。  

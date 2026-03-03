@@ -154,6 +154,13 @@ def load_tokenizer_embedding_model(args, pretrained_mode_dir = None):
         tokenizer.pad_token = token_desc['pad_token']
         tokenizer.pad_token_id = tokenizer.convert_tokens_to_ids(tokenizer.pad_token)
     
+    # register dataset-specific special tokens so they are not split into subwords
+    if getattr(args, 'dataset', None) in ('finecite',):
+        special_tokens = ['<TARGET_CITATION/>', '<CITATION/>']
+        num_added = tokenizer.add_special_tokens({'additional_special_tokens': special_tokens})
+        if num_added > 0:
+            print(f"Added {num_added} special token(s) to tokenizer: {special_tokens}")
+
     #load model
     if args.model_name in ['scibert']:
         embedding_model = load_scibert(args, pretrained_mode_dir)
@@ -161,7 +168,11 @@ def load_tokenizer_embedding_model(args, pretrained_mode_dir = None):
         embedding_model = load_scibert(args, pretrained_mode_dir)
     else:
         raise NotImplementedError(f"Loading {args.model_name} is not implemented.")
-    
+
+    # resize token embeddings if new tokens were added
+    if getattr(args, 'dataset', None) in ('finecite',):
+        embedding_model.resize_token_embeddings(len(tokenizer))
+
     return tokenizer, embedding_model
 
 def load_classifier(self, path):

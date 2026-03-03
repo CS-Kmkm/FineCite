@@ -139,9 +139,11 @@ class CustomTrainer:
         agg_loss = []
         self.model.train()
         for _, batch in enumerate(train_dataloader, 0):
-            hs, output, loss = self.model(**batch)
-            agg_loss.append(loss)
             self.optimizer.zero_grad()
+            if hasattr(self, "crf_optimizer"):
+                self.crf_optimizer.zero_grad()
+            hs, output, loss = self.model(**batch)
+            agg_loss.append(loss.detach().item())
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()
@@ -155,14 +157,14 @@ class CustomTrainer:
                     {
                         "current_epoch": self.current_epoch,
                         "current_step": self.global_step,
-                        "avg_loss": round(torch.mean(torch.stack(agg_loss)).item(), 5),
-                        "max_loss": round(torch.max(torch.stack(agg_loss)).item(), 5),
-                        "min_loss": round(torch.min(torch.stack(agg_loss)).item(), 5),
+                        "avg_loss": round(sum(agg_loss) / len(agg_loss), 5),
+                        "max_loss": round(max(agg_loss), 5),
+                        "min_loss": round(min(agg_loss), 5),
                     }
                 )
                 agg_loss = []
                 self.log(
-                    loss=round(torch.mean(loss).item(), 5),
+                    loss=round(loss.item(), 5),
                     current_step=self.global_step,
                 )
         return
@@ -282,23 +284,30 @@ class CustomTrainer:
                 torch.tensor([l if l <= 3 else l - 3 for l in labels2]).to(self.device),
             )
 
+            # tok_lbl2 may have -100 at positions where tok_lbl is not -100,
+            # so filter labels2 (and align preds) to remove remaining -100 values.
+            mask_lbl2 = labels2 != -100
+            preds_lbl2 = preds[mask_lbl2]
+            labels2 = labels2[mask_lbl2]
+
             val_res[f"acc"] = [
                 round(self.metric_multi_acc(preds, labels1).item(), 3),
-                round(self.metric_multi_acc(preds, labels2).item(), 3),
+                round(self.metric_multi_acc(preds_lbl2, labels2).item(), 3),
             ]
             val_res[f"macro_f1"] = []
             binary_labels1 = torch.where(labels1 == 0, 0, 1)
             binary_labels2 = torch.where(labels2 == 0, 0, 1)
             binary_preds = torch.where(preds == 0, 0, 1)
+            binary_preds_lbl2 = torch.where(preds_lbl2 == 0, 0, 1)
             val_res[f"total_f1"] = mean(
                 [
                     round(self.metric_binary_f1(binary_preds, binary_labels1).item(), 3),
-                    round(self.metric_binary_f1(binary_preds, binary_labels2).item(), 3),
+                    round(self.metric_binary_f1(binary_preds_lbl2, binary_labels2).item(), 3),
                 ]
             )
 
             f1_lbl1 = self.metric_f1(preds, labels1).tolist()
-            f1_lbl2 = self.metric_f1(preds, labels2).tolist()
+            f1_lbl2 = self.metric_f1(preds_lbl2, labels2).tolist()
             f1 = list(zip(f1_lbl1, f1_lbl2))
             val_res[f"inf_f1"] = round(mean(f1[1]), 3)
             val_res[f"perc_f1"] = round(mean(f1[2]), 3)

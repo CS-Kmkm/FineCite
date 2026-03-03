@@ -15,10 +15,11 @@ class ExtractionModel(torch.nn.Module):
         self.embedding_model = embedding_model
         self.classifier = ExtClassifier(args, embedding_model.config)
         
+        self.label_weights = torch.FloatTensor(self.args.label_weights).to(self.device)
         if self.args.ext_type in ['crf', 'bilstm_crf']:
             self.crf = CRF(self.args.num_labels, self.args.device, 1)
         else:
-            self.loss_fn = CrossEntropyLoss(weight=torch.FloatTensor(self.args.label_weights).to(self.device))
+            self.loss_fn = CrossEntropyLoss(weight=self.label_weights)
 
         self.to(self.device)
         
@@ -37,7 +38,8 @@ class ExtractionModel(torch.nn.Module):
         output = output.float()
         
         if self.args.ext_type in ['crf', 'bilstm_crf']:
-            loss = self.crf(output, token_labels) 
+            weighted_output = output * self.label_weights.unsqueeze(0).unsqueeze(0)
+            loss = self.crf(weighted_output, token_labels)
         else:
             loss = self.loss_fn(output, token_labels)
             

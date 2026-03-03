@@ -46,7 +46,7 @@ def get_args():
 
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size")
 
-    parser.add_argument("--learning_rate", type=float, default=3e-5, help="Learning rate for the base model")
+    parser.add_argument("--learning_rate", type=float, default=5e-5, help="Learning rate for the base model")
 
     parser.add_argument("--crf_learning_rate", type=float, default=0.005, help="Learning rate for the CRF layer")
 
@@ -66,7 +66,7 @@ def get_args():
     args.task = "ext"
 
     args.max_epochs = 20
-    args.patients = 5
+    args.patients = 3
     args.adam_epsilon = 1e-08
     args.weight_decay = 0.0
     args.use_prompt = "llm2vec" in args.model_name

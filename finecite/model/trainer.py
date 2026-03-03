@@ -110,7 +110,7 @@ class CustomTrainer:
                 "weight_decay": 0.0,
             },
         ]
-        AdamW = bnb.optim.AdamW if "llm2vec" in self.args.model_name else torch.optim.AdamW
+        AdamW = bnb.optim.AdamW
         self.optimizer = AdamW(
             optimizer_grouped_parameters, lr=float(self.args.learning_rate), eps=self.args.adam_epsilon
         )
@@ -140,8 +140,6 @@ class CustomTrainer:
         self.model.train()
         for _, batch in enumerate(train_dataloader, 0):
             self.optimizer.zero_grad()
-            if hasattr(self, "crf_optimizer"):
-                self.crf_optimizer.zero_grad()
             hs, output, loss = self.model(**batch)
             agg_loss.append(loss.detach().item())
             loss.backward()

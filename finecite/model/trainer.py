@@ -232,8 +232,12 @@ class CustomTrainer:
 
     def evaluate_sample(self, preds, lbl1, lbl2):
         val_res = {}
+        # lbl2 may still contain -100 at positions where lbl1 is not -100
+        mask_lbl2 = lbl2 != -100
+        preds_lbl2 = preds[mask_lbl2]
+        lbl2 = lbl2[mask_lbl2]
         f1_lbl1 = self.metric_f1(preds, lbl1).tolist()
-        f1_lbl2 = self.metric_f1(preds, lbl2).tolist()
+        f1_lbl2 = self.metric_f1(preds_lbl2, lbl2).tolist()
         f1 = list(zip(f1_lbl1, f1_lbl2))
         if self.args.dataset == "multicite_extraction":
             return f1

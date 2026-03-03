@@ -192,8 +192,12 @@ def load_tokenizer_embedding_model(args, pretrained_mode_dir=None):
         raise NotImplementedError(f"Loading {args.model_name} is not implemented.")
 
     # resize token embeddings if new tokens were added
+    # mean_resizing computes a full covariance matrix which causes CUBLAS_STATUS_INVALID_VALUE
+    # on GPU for large vocab sizes, so we temporarily move the model to CPU for this operation
     if getattr(args, "dataset", None) in ("finecite",):
+        embedding_model.to("cpu")
         embedding_model.resize_token_embeddings(len(tokenizer))
+        embedding_model.to(args.device)
 
     return tokenizer, embedding_model
 

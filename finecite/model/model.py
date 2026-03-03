@@ -41,8 +41,7 @@ class ExtractionModel(torch.nn.Module):
         output = output.float()
 
         if self.args.ext_type in ["crf", "bilstm_crf"]:
-            weighted_output = output * self.label_weights.unsqueeze(0).unsqueeze(0)
-            loss = self.crf(weighted_output, token_labels)
+            loss = self.crf(output, token_labels)
         else:
             loss = self.loss_fn(output, token_labels)
 

@@ -91,7 +91,9 @@ class CustomTrainer:
         # Define parameters for no weight decay
         no_decay = ["bias", "LayerNorm.weight"]
         # Group parameters for optimizer
-        crf_param = "ext_loss"
+        # CRF params live under `self.model.crf` (e.g. `crf.transitions`).
+        # Keep them in a dedicated optimizer with its own learning rate.
+        crf_param = "crf"
         optimizer_grouped_parameters = [
             {
                 "params": [
@@ -122,35 +124,34 @@ class CustomTrainer:
         if self.args.ext_type in ["crf", "bilstm_crf"]:
             crf_optimizer_grouped_parameters = [
                 {
-                    "params": [p for n, p in self.model.named_parameters() if crf_param in n],
+                    "params": [p for n, p in self.model.named_parameters() if p.requires_grad and crf_param in n],
                     "weight_decay": self.args.weight_decay,
                 },
             ]
             self.crf_optimizer = AdamW(
                 crf_optimizer_grouped_parameters, lr=float(self.args.crf_learning_rate), eps=self.args.adam_epsilon
             )
-            # CRF is updated once per epoch (epoch-level gradient accumulation),
-            # so num_training_steps = max_epochs, not total batch steps.
             self.crf_scheduler = get_linear_schedule_with_warmup(
                 self.crf_optimizer,
-                num_warmup_steps=ceil(0.05 * self.args.max_epochs),
-                num_training_steps=self.args.max_epochs,
+                num_warmup_steps=0.05 * self.args.num_training_steps,
+                num_training_steps=self.args.num_training_steps,
             )
 
     def train_epoch(self, train_dataloader):
         agg_loss = []
         self.model.train()
-        # CRF gradients accumulate over all batches in the epoch;
-        # zero_grad here so accumulation is bounded to one epoch.
-        if self.args.ext_type in ["crf", "bilstm_crf"]:
-            self.crf_optimizer.zero_grad()
         for _, batch in enumerate(train_dataloader, 0):
             self.optimizer.zero_grad()
+            if self.args.ext_type in ["crf", "bilstm_crf"]:
+                self.crf_optimizer.zero_grad()
             hs, output, loss = self.model(**batch)
             agg_loss.append(loss.detach().item())
             loss.backward()
             self.optimizer.step()
             self.scheduler.step()
+            if self.args.ext_type in ["crf", "bilstm_crf"]:
+                self.crf_optimizer.step()
+                self.crf_scheduler.step()
             self.step()
 
             if self.global_step % 100 == 0:
@@ -168,10 +169,6 @@ class CustomTrainer:
                     loss=round(loss.item(), 5),
                     current_step=self.global_step,
                 )
-        # Update CRF once per epoch with accumulated gradients
-        if self.args.ext_type in ["crf", "bilstm_crf"]:
-            self.crf_optimizer.step()
-            self.crf_scheduler.step()
         return
 
     def evaluate(self, eval_dataloader):

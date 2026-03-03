@@ -128,6 +128,8 @@ class CustomTrainer:
                     "weight_decay": self.args.weight_decay,
                 },
             ]
+            crf_param_count = sum(p.numel() for p in crf_optimizer_grouped_parameters[0]["params"])
+            print({"crf_optimizer_params": crf_param_count, "crf_lr": float(self.args.crf_learning_rate)})
             self.crf_optimizer = AdamW(
                 crf_optimizer_grouped_parameters, lr=float(self.args.crf_learning_rate), eps=self.args.adam_epsilon
             )
